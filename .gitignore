@@ -1,0 +1,9 @@
+.env
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+uploads/
+.DS_Store
+*.log
+.vscode/

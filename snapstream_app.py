@@ -1,7 +1,14 @@
 import os
 import boto3
-AWS_BUCKET_NAME = "snapstream-media-nitin"   # put YOUR bucket name here
-AWS_REGION = "ap-south-1"
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
+# Get credentials from environment variables
+AWS_BUCKET_NAME = os.getenv('AWS_BUCKET_NAME')
+AWS_REGION = os.getenv('AWS_REGION')
+
 import uuid
 from boto3.dynamodb.conditions import Attr
 from datetime import datetime
@@ -14,7 +21,7 @@ s3_client = boto3.client('s3', region_name=AWS_REGION)
 app = Flask(__name__)
 
 # SNS Configuration
-SNS_TOPIC_ARN = "arn:aws:sns:ap-south-1:303983719037:snapstream-upload-topic"
+SNS_TOPIC_ARN = os.getenv('SNS_TOPIC_ARN')
 
 sns = boto3.client("sns", region_name=AWS_REGION)
 
