@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SnapStream – Upload Media</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📸 SnapStream</h1>
+            <p class="tagline">Media Upload and Management Platform</p>
+        </header>
+
+        <div class="upload-card">
+            <div class="card-header">
+                <h2>Upload Media</h2>
+                <p>Upload images, videos, or audio files</p>
+            </div>
+
+            <form id="uploadForm" enctype="multipart/form-data">
+                <div class="file-input-wrapper">
+                    <input 
+                        type="file" 
+                        id="fileInput" 
+                        name="file" 
+                        accept=".jpg,.jpeg,.png,.gif,.mp4,.avi,.mov,.mp3,.wav,.ogg"
+                        required
+                    >
+                    <label for="fileInput" id="fileLabel">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                        <span id="fileName">Choose a file or drag it here</span>
+                        <span class="file-types">Supported: JPG, PNG, MP4, MP3, WAV (Max 100MB)</span>
+                    </label>
+                </div>
+
+                <button type="submit" id="uploadBtn" class="btn btn-primary">
+                    <span id="btnText">Upload Media</span>
+                    <span id="btnLoader" class="loader" style="display: none;"></span>
+                </button>
+            </form>
+
+            <div id="message" class="message"></div>
+
+            <div class="file-preview" id="filePreview" style="display: none;">
+                <h3>Preview</h3>
+                <div id="previewContent"></div>
+            </div>
+        </div>
+
+        <div class="action-buttons">
+            <a href="/gallery" class="btn btn-secondary">
+                📂 View Gallery
+            </a>
+        </div>
+
+        <footer>
+            <p>SnapStream v1.0 | BLOCK-1 Foundation Phase</p>
+        </footer>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const fileLabel = document.getElementById('fileLabel');
+        const fileName = document.getElementById('fileName');
+        const uploadForm = document.getElementById('uploadForm');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const btnText = document.getElementById('btnText');
+        const btnLoader = document.getElementById('btnLoader');
+        const message = document.getElementById('message');
+        const filePreview = document.getElementById('filePreview');
+        const previewContent = document.getElementById('previewContent');
+
+        // Handle file selection
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                fileName.textContent = file.name;
+                fileLabel.classList.add('file-selected');
+                showPreview(file);
+            }
+        });
+
+        // Drag and drop functionality
+        fileLabel.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.classList.add('drag-over');
+        });
+
+        fileLabel.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            this.classList.remove('drag-over');
+        });
+
+        fileLabel.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.classList.remove('drag-over');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                fileName.textContent = files[0].name;
+                this.classList.add('file-selected');
+                showPreview(files[0]);
+            }
+        });
+
+        // Show file preview
+        function showPreview(file) {
+            const fileType = file.type.split('/')[0];
+            previewContent.innerHTML = '';
+
+            if (fileType === 'image') {
+                const img = document.createElement('img');
+                img.src = URL.createObjectURL(file);
+                img.style.maxWidth = '100%';
+                img.style.borderRadius = '8px';
+                previewContent.appendChild(img);
+                filePreview.style.display = 'block';
+            } else if (fileType === 'video') {
+                const video = document.createElement('video');
+                video.src = URL.createObjectURL(file);
+                video.controls = true;
+                video.style.maxWidth = '100%';
+                video.style.borderRadius = '8px';
+                previewContent.appendChild(video);
+                filePreview.style.display = 'block';
+            } else if (fileType === 'audio') {
+                const audio = document.createElement('audio');
+                audio.src = URL.createObjectURL(file);
+                audio.controls = true;
+                audio.style.width = '100%';
+                previewContent.appendChild(audio);
+                filePreview.style.display = 'block';
+            }
+        }
+
+        // Handle form submission
+        uploadForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const file = fileInput.files[0];
+            if (!file) {
+                showMessage('Please select a file', 'error');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            // Show loading state
+            uploadBtn.disabled = true;
+            btnText.style.display = 'none';
+            btnLoader.style.display = 'inline-block';
+            message.textContent = '';
+
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showMessage(result.message, 'success');
+                    console.log('Upload successful:', result.data);
+                    
+                    // Reset form
+                    uploadForm.reset();
+                    fileName.textContent = 'Choose a file or drag it here';
+                    fileLabel.classList.remove('file-selected');
+                    filePreview.style.display = 'none';
+                    
+                    // Redirect to gallery after 2 seconds
+                    setTimeout(() => {
+                        window.location.href = '/gallery';
+                    }, 2000);
+                } else {
+                    showMessage(result.message || 'Upload failed', 'error');
+                }
+            } catch (error) {
+                showMessage('Upload failed. Please try again.', 'error');
+                console.error('Upload error:', error);
+            } finally {
+                // Reset button state
+                uploadBtn.disabled = false;
+                btnText.style.display = 'inline';
+                btnLoader.style.display = 'none';
+            }
+        });
+
+        function showMessage(text, type) {
+            message.textContent = text;
+            message.className = 'message ' + type;
+            message.style.display = 'block';
+
+            if (type === 'success') {
+                setTimeout(() => {
+                    message.style.display = 'none';
+                }, 5000);
+            }
+        }
+    </script>
+</body>
+</html>

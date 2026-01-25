@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SnapStream – Media Gallery</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📸 SnapStream</h1>
+            <p class="tagline">Media Gallery</p>
+        </header>
+
+        <div class="gallery-header">
+            <h2>Your Media Files</h2>
+            <p class="file-count">
+                {% if media_files %}
+                    {{ media_files|length }} file{% if media_files|length != 1 %}s{% endif %} uploaded
+                {% else %}
+                    No files uploaded yet
+                {% endif %}
+            </p>
+        </div>
+
+        {% if media_files %}
+        <div class="gallery-grid">
+            {% for media in media_files %}
+            <div class="gallery-item">
+                <div class="media-preview">
+                    {% if media.filetype in ["JPG", "JPEG", "PNG"] %}
+                        <img src="{{ media.url }}" alt="{{ media.filename }}" loading="lazy">
+                    {% elif media.filetype == "MP4" %}
+                        <video controls preload="metadata">
+                            <source src="{{ media.url }}" type="video/mp4">
+                            Your browser does not support the video tag.
+                        </video>
+                    {% elif media.filetype in ["MP3", "WAV", "OGG"] %}
+                        <div class="audio-wrapper">
+                            <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M9 18V5l12-2v13"></path>
+                                <circle cx="6" cy="18" r="3"></circle>
+                                <circle cx="18" cy="16" r="3"></circle>
+                            </svg>
+                            <audio controls>
+                                <source src="{{ media.url }}">
+                                Your browser does not support the audio tag.
+                            </audio>
+                        </div>
+                    {% else %}
+                        <div class="audio-wrapper">
+                            <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M9 18V5l12-2v13"></path>
+                                <circle cx="6" cy="18" r="3"></circle>
+                                <circle cx="18" cy="16" r="3"></circle>
+                            </svg>
+                            <audio controls>
+                                <source src="{{ media.url }}">
+                                Your browser does not support the audio tag.
+                            </audio>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="media-info">
+                    <div class="media-header">
+                        <span class="media-type-badge">{{ media.filetype }}</span>
+                    </div>
+                    
+                    <h3 class="media-filename" title="{{ media.filename }}">{{ media.filename }}</h3>
+                    
+                    <div class="media-details">
+                        <div class="detail-item">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12 6 12 12 16 14"></polyline>
+                            </svg>
+                            <span>{{ media.upload_time }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="button-group">
+                        <a href="{{ media.url }}" class="btn btn-preview" target="_blank">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                            View
+                        </a>
+                        <a href="/download/{{ media.filename }}" class="btn btn-download">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            Download
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <svg width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                <polyline points="21 15 16 10 5 21"></polyline>
+            </svg>
+            <h3>No media files yet</h3>
+            <p>Start by uploading your first image, video, or audio file</p>
+        </div>
+        {% endif %}
+
+        <div class="action-buttons">
+            <a href="/" class="btn btn-secondary">
+                ⬅️ Back to Upload
+            </a>
+        </div>
+
+        <footer>
+            <p>SnapStream v1.0 | BLOCK-1 Foundation Phase</p>
+        </footer>
+    </div>
+
+    <!-- Preview Modal -->
+    <div id="previewModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closePreview()">&times;</span>
+            <div id="previewBody"></div>
+        </div>
+    </div>
+
+    <script>
+        function openPreview(url, type) {
+            const modal = document.getElementById('previewModal');
+            const previewBody = document.getElementById('previewBody');
+            previewBody.innerHTML = '';
+
+            if (type === 'image') {
+                const img = document.createElement('img');
+                img.src = url;
+                img.style.maxWidth = '100%';
+                img.style.maxHeight = '90vh';
+                img.style.borderRadius = '8px';
+                previewBody.appendChild(img);
+            } else if (type === 'video') {
+                const video = document.createElement('video');
+                video.src = url;
+                video.controls = true;
+                video.style.maxWidth = '100%';
+                video.style.maxHeight = '90vh';
+                video.style.borderRadius = '8px';
+                previewBody.appendChild(video);
+            } else if (type === 'audio') {
+                const audio = document.createElement('audio');
+                audio.src = url;
+                audio.controls = true;
+                audio.style.width = '100%';
+                previewBody.appendChild(audio);
+            }
+
+            modal.style.display = 'block';
+        }
+
+        function closePreview() {
+            document.getElementById('previewModal').style.display = 'none';
+        }
+
+        window.onclick = function(event) {
+            const modal = document.getElementById('previewModal');
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        // Add fade-in animation to gallery items
+        document.addEventListener('DOMContentLoaded', function() {
+            const items = document.querySelectorAll('.gallery-item');
+            items.forEach((item, index) => {
+                setTimeout(() => {
+                    item.style.opacity = '0';
+                    item.style.transform = 'translateY(20px)';
+                    item.style.transition = 'opacity 0.5s, transform 0.5s';
+                    
+                    setTimeout(() => {
+                        item.style.opacity = '1';
+                        item.style.transform = 'translateY(0)';
+                    }, 50);
+                }, index * 50);
+            });
+        });
+
+        // Lazy loading for images
+        if ('IntersectionObserver' in window) {
+            const imageObserver = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const img = entry.target;
+                        img.src = img.dataset.src || img.src;
+                        img.classList.add('loaded');
+                        observer.unobserve(img);
+                    }
+                });
+            });
+
+            document.querySelectorAll('img[loading="lazy"]').forEach(img => {
+                imageObserver.observe(img);
+            });
+        }
+    </script>
+</body>
+</html>
